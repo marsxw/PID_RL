@@ -98,7 +98,7 @@ class CustomPID(gymnasium.Env):
         # if len(self.previous_action) > 0:
         #     action_dt = np.abs(np.array(action) - np.array(self.previous_action[-1]))/self.action_space.high
         #     action_reward = self._scale_reward(-np.mean(action_dt), -1, 0)
-        # self.previous_action.append(action)
+        self.previous_action.append(action)
         # reward = .5*r_error + .4*r_attach + .1*action_reward
         reward = r_error
 
