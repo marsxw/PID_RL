@@ -150,9 +150,4 @@ if __name__ == '__main__':
     plt.xlim(0, env.sim_time)
     plt.show()
 
-# %%
-'''
-stable_baselines3        2.4.0
-gymnasium                1.0.0
-shimmy                   0.2.1
-'''
+# %% 
