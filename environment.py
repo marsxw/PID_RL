@@ -48,7 +48,8 @@ class CustomPID(gymnasium.Env):
         self.previous_error = None  # 前一个误差
         self.integral = None  # 积分项
         self.step_num = None
-        self.previous_action = None
+        self.actions = None
+        self.info = {}
 
     def _scale_reward(self, reward, min_value, max_value):
         '''
@@ -64,7 +65,8 @@ class CustomPID(gymnasium.Env):
         self.step_num = 0
         self.integral = 0
         self.previous_error = 0
-        self.previous_action = []
+        self.actions = []
+        self.info = {}
 
         self.y = np.zeros_like(self.t)
         self.u = np.zeros_like(self.t)
@@ -73,6 +75,8 @@ class CustomPID(gymnasium.Env):
 
     def step(self, action):
         self.step_num += 1
+        self.actions.append(action)
+
         # 计算 PID 输出
         error = self.setpoint - self.y[self.step_num-1]
         self.integral += error * self.time_step
@@ -85,22 +89,9 @@ class CustomPID(gymnasium.Env):
         self.y[self.step_num] = y_response[-1]  # 获取当前时刻的输出值
 
         # 计算误差奖励 误差越小奖励越大
-        r_error = self._scale_reward(-abs(self.y[self.step_num] - self.setpoint), -self.setpoint, 0)
+        reward = self._scale_reward(-abs(self.y[self.step_num] - self.setpoint), -self.setpoint, 0)
         if abs(self.y[self.step_num] - self.setpoint) < 0.05:
-            r_error = 1
-
-        # 计算贴近目标奖励
-        # r_attach = 0
-        # if abs(self.y[self.step_num] - self.setpoint) < 0.1:  # 达到目标值的阈值时,步数越小,奖励越大
-        #     r_attach = self._scale_reward(-self.step_num, -self.max_episode_steps, 0)
-        # 平滑action奖励
-        # action_reward = 0
-        # if len(self.previous_action) > 0:
-        #     action_dt = np.abs(np.array(action) - np.array(self.previous_action[-1]))/self.action_space.high
-        #     action_reward = self._scale_reward(-np.mean(action_dt), -1, 0)
-        self.previous_action.append(action)
-        # reward = .5*r_error + .4*r_attach + .1*action_reward
-        reward = r_error
+            reward = 1
 
         terminated = False
         # 超调则结束 则结束
@@ -109,11 +100,11 @@ class CustomPID(gymnasium.Env):
             reward = 0
 
         truncated = self.step_num >= self.max_episode_steps
-        info = {
+        self.info = {
             "TimeLimit.truncated": truncated,
             "terminated": terminated
         }
-        return self.get_observation(), reward, terminated, truncated, info
+        return self.get_observation(), reward, terminated, truncated, self.info
 
     def convert_action(self, action):
         '''
@@ -127,7 +118,7 @@ class CustomPID(gymnasium.Env):
 
 if __name__ == '__main__':
 
-    env = CustomPID()
+    env = CustomPID(sim_time=2)
     env.reset()
     total_reward = 0
     terminated = False
@@ -150,4 +141,4 @@ if __name__ == '__main__':
     plt.xlim(0, env.sim_time)
     plt.show()
 
-# %% 
+# %%
