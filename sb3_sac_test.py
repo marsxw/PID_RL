@@ -32,15 +32,15 @@ plt.show()
 # plt.grid(True)
 # plt.show()
 
-# %%
 all_actions = joblib.load('logs_sac/actions.npy')
 PID_train_list = []
 epoch_list = []
-sample_timepoint = 50  # 控制律100hz 使用第50个数据点数据， 就是0.5s
+sample_timepoint = 100  # 控制律100hz 使用第50个数据点数据， 就是0.5s
 for epoch, actions in enumerate(all_actions):
     if (len(actions) < sample_timepoint):
         continue
-    PID_train_list.append(actions[sample_timepoint-1])
+    # PID_train_list.append(actions[sample_timepoint-1])
+    PID_train_list.append(np.array(actions).mean(axis=1))
     epoch_list.append(epoch)
 
 PID_train_list = np.array(PID_train_list)
@@ -68,8 +68,7 @@ plt.grid(True)
 plt.legend()
 plt.show()
 
-
-
+# %%
 # 测试训练好的模型
 model = SAC.load('logs_sac/best_model.zip')
 obs, terminated, total_reward = env.reset(), False, 0
