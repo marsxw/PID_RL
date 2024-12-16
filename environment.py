@@ -113,9 +113,9 @@ class CustomPID(gymnasium.Env):
 
         terminated = False
         # 超调则结束 则结束
-        if abs(self.y[self.step_num]/self.setpoint[self.step_num-1]) > 1.2:
-            terminated = True
-            reward = 0
+        # if abs(self.y[self.step_num]/self.setpoint[self.step_num-1]) > 1.2:
+        #     terminated = True
+        #     reward = 0
 
         truncated = self.step_num >= self.max_episode_steps
         self.info = {
