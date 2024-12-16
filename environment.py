@@ -160,4 +160,3 @@ if __name__ == '__main__':
     plt.show()
 
 # %%
-env.y[env.step_num]/env.setpoint[env.step_num]
