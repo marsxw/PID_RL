@@ -106,7 +106,7 @@ class CustomPID(gymnasium.Env):
         self.y[self.step_num] = y_response[-1]  # 获取当前时刻的输出值
 
         # 计算误差奖励 误差越小奖励越大
-        reward = self._scale_reward(-abs(self.y[self.step_num] - self.setpoint), -self.setpoint, 0)
+        reward = self._scale_reward(-abs(self.y[self.step_num] - self.setpoint[self.step_num]), -self.setpoint[self.step_num], 0)
         if abs(self.y[self.step_num] - self.setpoint[self.step_num]) < 0.05:
             reward = 1
 
