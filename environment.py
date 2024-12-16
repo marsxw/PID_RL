@@ -95,8 +95,9 @@ class CustomPID(gymnasium.Env):
         self.step_num += 1
         self.actions.append(action)
 
+        setpoint = self.setpoint[self.step_num-1]  # 目标值
         # 计算 PID 输出
-        error = self.setpoint[self.step_num-1] - self.y[self.step_num-1]
+        error = setpoint - self.y[self.step_num-1]
         self.integral += error * self.time_step
         derivative = (error - self.previous_error) / self.time_step
         self.u[self.step_num] = action[0] * error + action[1] * self.integral + action[2] * derivative
@@ -107,13 +108,13 @@ class CustomPID(gymnasium.Env):
         self.y[self.step_num] = y_response[-1]  # 获取当前时刻的输出值
 
         # 计算误差奖励 误差越小奖励越大
-        reward = self._scale_reward(-abs(self.y[self.step_num] - self.setpoint[self.step_num]), -self.setpoint[self.step_num], 0)
-        if abs(self.y[self.step_num] - self.setpoint[self.step_num-1]) < 0.05:
+        reward = self._scale_reward(-abs(self.y[self.step_num] - setpoint), -setpoint, 0)
+        if abs(self.y[self.step_num] - setpoint) < 0.05:
             reward = 1
 
         terminated = False
         # 超调则结束 则结束
-        # if abs(self.y[self.step_num]/self.setpoint[self.step_num-1]) > 1.2:
+        # if abs(self.y[self.step_num]/setpoint) > 1.2:
         #     terminated = True
         #     reward = 0
 
