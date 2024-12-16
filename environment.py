@@ -72,7 +72,8 @@ class CustomPID(gymnasium.Env):
             self.setpoint = setpoint  # 使用传入的 setpoint
         else:
             # 随机生成阶跃 方波 正弦信号
-            A = np.random.uniform(0, 1)  # 随机目标幅值
+            # A = np.random.uniform(0, 1)  # 随机目标幅值
+            A = 1
             phase = np.random.uniform(0, 2 * np.pi)
             sampel_type = np.random.randint(0, 3)
             if sampel_type == 0:  # 阶跃信号
@@ -107,12 +108,12 @@ class CustomPID(gymnasium.Env):
 
         # 计算误差奖励 误差越小奖励越大
         reward = self._scale_reward(-abs(self.y[self.step_num] - self.setpoint[self.step_num]), -self.setpoint[self.step_num], 0)
-        if abs(self.y[self.step_num] - self.setpoint[self.step_num]) < 0.05:
+        if abs(self.y[self.step_num] - self.setpoint[self.step_num-1]) < 0.05:
             reward = 1
 
         terminated = False
         # 超调则结束 则结束
-        if abs(self.y[self.step_num]/self.setpoint[self.step_num]) > 1.2:
+        if abs(self.y[self.step_num]/self.setpoint[self.step_num-1]) > 1.2:
             terminated = True
             reward = 0
 
@@ -135,12 +136,12 @@ class CustomPID(gymnasium.Env):
 
 if __name__ == '__main__':
 
-    env = CustomPID(sim_time=5)
+    env = CustomPID(sim_time=2)
     env.reset()
     total_reward = 0
     terminated = False
     while not terminated:
-        action = [27, .01, 0]
+        action = [30, .01, 0]
         obs, reward, terminated, truncated, info = env.step(action)
         # print(obs, reward, terminated, truncated, info)
         total_reward += reward
@@ -159,3 +160,4 @@ if __name__ == '__main__':
     plt.show()
 
 # %%
+env.y[env.step_num]/env.setpoint[env.step_num]
