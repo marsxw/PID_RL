@@ -8,7 +8,7 @@ from gymnasium import spaces
 
 
 class CustomPID(gymnasium.Env):
-    def __init__(self, time_step=0.01, sim_time=1, setpoint=1):
+    def __init__(self, time_step=0.01, sim_time=1):
         """
         Constructor for the CustomPID environment.
 
@@ -22,13 +22,13 @@ class CustomPID(gymnasium.Env):
             The target value that the system should reach.
         """
         super(CustomPID, self).__init__()
-        self.setpoint = setpoint
         self.time_step = time_step
         self.sim_time = sim_time
         self.max_episode_steps = int(sim_time/time_step)
         self.t = np.linspace(0, self.sim_time, self.max_episode_steps+1)
         self.y = None  # 系统输出 每个时刻的输出
         self.u = None  # 系统输入 每个时刻的输入
+        self.setpoint = None  # 系统目标
 
         num1 = [0.02 * 0.005 * 903]
         den1 = [1/3600, 0.9/60, 1]
@@ -59,18 +59,35 @@ class CustomPID(gymnasium.Env):
         return (reward - min_value) / (max_value - min_value)
 
     def get_observation(self):
-        return np.array([self.y[self.step_num], self.setpoint - self.y[self.step_num]])
+        return np.array([self.y[self.step_num], self.setpoint[self.step_num] - self.y[self.step_num]])
 
-    def reset(self, *args, **kwargs):
+    def reset(self,  setpoint=None,  *args, **kwargs):
         self.step_num = 0
         self.integral = 0
         self.previous_error = 0
         self.actions = []
         self.info = {}
 
+        if setpoint is not None:
+            self.setpoint = setpoint  # 使用传入的 setpoint
+        else:
+            # 随机生成阶跃 方波 正弦信号
+            A = np.random.uniform(0, 1)  # 随机目标幅值
+            phase = np.random.uniform(0, 2 * np.pi)
+            sampel_type = np.random.randint(0, 3)
+            if sampel_type == 0:  # 阶跃信号
+                self.setpoint = np.random.choice([-1, 1])*A*np.ones_like(self.t)
+            elif sampel_type == 1:  # 正弦信号
+                freq = 5
+                self.setpoint = A * np.sin(2 * np.pi * freq * self.t + phase)
+            else:  # 方波信号
+                freq = .5  # 周期2
+                self.setpoint = np.sin(2 * np.pi * freq * self.t + phase)
+                self.setpoint = A * np.where(self.setpoint > 0, 1, -1)
+
         self.y = np.zeros_like(self.t)
         self.u = np.zeros_like(self.t)
-        self.y[0] = np.random.uniform(0, .01*self.setpoint)  # 初始值添加一点噪音
+        self.y[0] = np.random.uniform(0, .01*self.setpoint[0])  # 初始值添加一点噪音
         return self.get_observation()
 
     def step(self, action):
@@ -78,7 +95,7 @@ class CustomPID(gymnasium.Env):
         self.actions.append(action)
 
         # 计算 PID 输出
-        error = self.setpoint - self.y[self.step_num-1]
+        error = self.setpoint[self.step_num-1] - self.y[self.step_num-1]
         self.integral += error * self.time_step
         derivative = (error - self.previous_error) / self.time_step
         self.u[self.step_num] = action[0] * error + action[1] * self.integral + action[2] * derivative
@@ -90,12 +107,12 @@ class CustomPID(gymnasium.Env):
 
         # 计算误差奖励 误差越小奖励越大
         reward = self._scale_reward(-abs(self.y[self.step_num] - self.setpoint), -self.setpoint, 0)
-        if abs(self.y[self.step_num] - self.setpoint) < 0.05:
+        if abs(self.y[self.step_num] - self.setpoint[self.step_num]) < 0.05:
             reward = 1
 
         terminated = False
         # 超调则结束 则结束
-        if self.y[self.step_num]/self.setpoint > 1.2:
+        if abs(self.y[self.step_num]/self.setpoint[self.step_num]) > 1.2:
             terminated = True
             reward = 0
 
@@ -118,7 +135,7 @@ class CustomPID(gymnasium.Env):
 
 if __name__ == '__main__':
 
-    env = CustomPID(sim_time=2)
+    env = CustomPID(sim_time=5)
     env.reset()
     total_reward = 0
     terminated = False
@@ -132,7 +149,7 @@ if __name__ == '__main__':
 
     print(total_reward)
     plt.plot(env.t[:env.step_num], env.y[:env.step_num], label='y')
-    plt.plot(env.t[:env.step_num], np.ones(env.step_num) * env.setpoint, '--', label='setpoint')
+    plt.plot(env.t[:env.step_num],  env.setpoint[:env.step_num], '--', label='setpoint')
     plt.xlabel('t')
     plt.ylabel('y')
     plt.title('pid')

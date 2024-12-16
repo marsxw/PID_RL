@@ -29,7 +29,12 @@ model = SAC(
     batch_size=256,
     ent_coef=0.05    # 控制熵正则化项
 )
-
+# 打印网络结构
+print("Actor Network (Policy):")
+print(model.policy.actor)  # 策略网络
+print("\nCritic Network (Q-Value):")
+print(model.policy.critic)  # 价值网络
+#%%
 log_dir = './logs_sac/'
 
 eval_callback = EvalCallback(
